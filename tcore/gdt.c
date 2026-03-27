@@ -1,27 +1,34 @@
 #include <stdint.h>
 
-// Estrutura de uma entrada na GDT (8 bytes)
+/**
+ * @brief Estrutura de uma entrada (Segment Descriptor) na GDT.
+ * Define o endereço base, limite e permissões de um segmento de memória.
+ */
 struct gdt_entry_struct {
-    uint16_t limit_low;           // Os 16 bits inferiores do limite
-    uint16_t base_low;            // Os 16 bits inferiores da base
-    uint8_t  base_middle;         // Os próximos 8 bits da base
-    uint8_t  access;              // Determina o privilégio (Ring 0 ou 3)
-    uint8_t  granularity;
-    uint8_t  base_high;           // Os últimos 8 bits da base
+    uint16_t limit_low;           /**< Bits 0-15 do tamanho do segmento */
+    uint16_t base_low;            /**< Bits 0-15 do endereço inicial */
+    uint8_t  base_middle;         /**< Bits 16-23 do endereço inicial */
+    uint8_t  access;              /**< Flags de acesso (Ex: Ring 0, Código/Dados) */
+    uint8_t  granularity;         /**< Configura escala do limite e bits 16-19 do limite */
+    uint8_t  base_high;           /**< Bits 24-31 do endereço inicial */
 } __attribute__((packed));
 
-// Ponteiro para a GDT que a CPU vai ler
+/**
+ * @brief Estrutura do ponteiro GDT que será carregado no registrador GDTR.
+ */
 struct gdt_ptr_struct {
-    uint16_t limit;               // Tamanho da tabela - 1
-    uint32_t base;                // Endereço da primeira entrada
+    uint16_t limit;               /**< Tamanho total da tabela menos 1 byte */
+    uint32_t base;                /**< Endereço linear do início da tabela */
 } __attribute__((packed));
 
+// Definimos 5 segmentos: Nulo, Código Kernel, Dados Kernel, Código User e Dados User.
 struct gdt_entry_struct gdt_entries[5];
 struct gdt_ptr_struct   gdt_ptr;
 
-// Função externa em Assembly para aplicar a GDT
+/** @brief Função em Assembly que ativa a GDT carregando os registradores de segmento */
 extern void gdt_flush(uint32_t);
 
+/** @brief Preenche os bits de uma entrada da GDT de forma organizada */
 static void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
     gdt_entries[num].base_low    = (base & 0xFFFF);
     gdt_entries[num].base_middle = (base >> 16) & 0xFF;
@@ -34,7 +41,11 @@ static void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t acc
     gdt_entries[num].access      = access;
 }
 
+/**
+ * @brief Configura a tabela GDT para um modelo de memória "Flat" (plano).
+ */
 void tasma_gdt_init() {
+    // Define o tamanho da tabela e aponta para a memória das entradas
     gdt_ptr.limit = (sizeof(struct gdt_entry_struct) * 5) - 1;
     gdt_ptr.base  = (uint32_t)&gdt_entries;
 
