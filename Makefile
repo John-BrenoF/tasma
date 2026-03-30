@@ -3,7 +3,7 @@ AS = nasm
 LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -lgcc -T linker.ld
 CFLAGS = -m32 -c -ffreestanding -O2 -Wall -Wextra
 
-OBJS = bbin/boot.o bbin/gdt_flush.o bbin/gdt.o bbin/idt_load.o bbin/idt.o bbin/kernel.o bbin/tvga.o
+OBJS = bbin/boot.o bbin/gdt_flush.o bbin/gdt.o bbin/idt_load.o bbin/idt.o bbin/interrupts.o bbin/isr.o bbin/kernel.o bbin/tvga.o
 
 all: bbin/tasma-kernel.bin
 
@@ -16,11 +16,17 @@ bbin/gdt_flush.o: tcore/gdt_flush.asm
 bbin/idt_load.o: tcore/idt_load.asm
 	$(AS) -felf32 tcore/idt_load.asm -o bbin/idt_load.o
 
+bbin/interrupts.o: tcore/interrupts.asm
+	$(AS) -felf32 tcore/interrupts.asm -o bbin/interrupts.o
+
 bbin/gdt.o: tcore/gdt.c
 	$(CC) $(CFLAGS) tcore/gdt.c -o bbin/gdt.o
 
 bbin/idt.o: tcore/idt.c
 	$(CC) $(CFLAGS) tcore/idt.c -o bbin/idt.o
+
+bbin/isr.o: tcore/isr.c
+	$(CC) $(CFLAGS) tcore/isr.c -o bbin/isr.o
 
 bbin/kernel.o: tcore/kernel.c
 	$(CC) $(CFLAGS) tcore/kernel.c -o bbin/kernel.o
